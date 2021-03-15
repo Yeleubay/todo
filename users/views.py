@@ -37,9 +37,3 @@ def logout(request):
         return Response(status=status.HTTP_205_RESET_CONTENT)
     except Exception:
         return Response(status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
-def test(request):
-    return Response(status=status.HTTP_200_OK)
