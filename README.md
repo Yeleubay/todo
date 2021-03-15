@@ -1,5 +1,5 @@
 # TODO app
-Использовал Python, Django + DRF
+Использовано Django(DRF), Redis, Celery
 
 ## Install
 > python3 -m venv venv
@@ -16,26 +16,25 @@
 
 > celery -A todo_api.celery worker —pool=solo -l info
 
-### **NOTE:** вы должны сами создать DJANGO_EMAIL, DJANGO_EMAIL_PASS в своём виртуальном переменном окружений(activate.bat)
-> set DJANGO_EMAIL={email} 
-> 
-> set DJANGO_EMAIL_PASS={email_password}
-#### deactivate.bat
-> set DJANGO_EMAIL=
-> 
-> set DJANGO_EMAIL_PASS=
+> **Note:** Для отправки электронной почты email и пароль Gmail аккаунта отправителя берется с переменных окружения:
+EMAIL_HOST_USER = os.environ['DJANGO_EMAIL']
+EMAIL_HOST_PASSWORD = os.environ['DJANGO_EMAIL_PASS']
 
 ## API ENDPOINTS
-### _Авторизация, реализованная с помощью библиотеки_ rest_framework_simplejwt
-- /api/accounts/register/ - регистрация пользователя
-- /api/accounts/login/ - авторизация
-- /api/accounts/logout/ - выход
-- /api/accounts/token/refresh/ - для обновления access токена
+### Авторизация
+- POST /api/accounts/register/ - регистрация пользователя
+- POST /api/accounts/login/ - авторизация
+- POST /api/accounts/logout/ - выход
+- POST /api/accounts/token/refresh/ - для обновления access токена
+> Для работы с jwt была использована библиотека _rest_framework_simplejwt_
 
 ### Tasks(TODOs)
-- api/todo/ - Создание задачи и просмотр всех задачь
-- api/todo/{todo_id}/ - Возвращение, изменение и удаление задачи
+- GET /api/todo/ - Просмотр всех задач
+- POST /api/todo/ - Создание задачи
+- GET api/todo/{todo_id}/ - Просмотр задачи по id
+- PATCH api/todo/{todo_id}/ - Изменение задачи по id
+- DELETE api/todo/{todo_id}/ - Удаление задачи по id
 > **Note:** Вы не можете удалять или изменять задачи, которые создали другие юзеры.
 
 > При изменений статуса задачи, Вам так же приходит сообщение на почту
-- api/todo/{todo_id}/execute/ - Пометить задачу выполненной и отправка сообщения создателю задачи
+- api/todo/{todo_id}/execute/ - Пометить задачу выполненной и отправить сообщение создателю задачи
