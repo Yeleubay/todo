@@ -9,60 +9,59 @@ from .models import Task
 from .tasks import send_is_done_email
 
 
-@api_view(["GET"])
-@permission_classes([AllowAny])
-def get_tasks_list(request):
-    tasks = Task.objects.all()
-    serializer = TasksSerializer(tasks, context={'request': request}, many=True)
-    return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-@api_view(["GET"])
-@permission_classes([AllowAny])
-def get_task(request, pk):
-    task = Task.objects.get(pk=pk)
-    serializer = TaskSerializer(task, context={'request': request}, many=False)
-    return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-@api_view(["POST"])
+@api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
-def create_task(request):
-    serializer = TaskSerializer(data=request.data, context={'request': request})
-    serializer.is_valid(raise_exception=True)
-    serializer.save()
-    return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-
-@api_view(["PATCH"])
-@permission_classes([IsAuthenticated])
-def update_task(request, pk):
-    task = Task.objects.get(pk=pk)
-    if request.user == task.created_by:
-        if task.is_done != request.data['is_done']:
-            send_is_done_email.delay(pk)
-        serializer = TaskSerializer(task, data=request.data, partial=True)
+def task_list_create(request):
+    if request.method == "GET":
+        tasks = Task.objects.all()
+        serializer = TasksSerializer(tasks, context={'request': request}, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    #
+    # Create task
+    #
+    if request.method == "POST":
+        serializer = TaskSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    else:
-        return Response("You do not have permission for manipulations on this task",
-                        status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-@api_view(["DELETE"])
+@api_view(["GET", "PATCH", "DELETE"])
 @permission_classes([IsAuthenticated])
-def delete_task(request, pk):
-    try:
+def task_manipulation(request, pk):
+    if request.method == "GET":
+        task = Task.objects.get(pk=pk)
+        serializer = TaskSerializer(task, context={'request': request}, many=False)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    #
+    # Update task
+    #
+    if request.method == "PATCH":
         task = Task.objects.get(pk=pk)
         if request.user == task.created_by:
-            task.delete()
-            return Response(status=status.HTTP_205_RESET_CONTENT)
+            if task.is_done != request.data['is_done']:
+                send_is_done_email.delay(pk)
+            serializer = TaskSerializer(task, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response("You do not have permission for manipulations on this task",
                             status=status.HTTP_400_BAD_REQUEST)
-    except Exception as e:
-        return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
+    #
+    # Delete task
+    #
+    if request.method == "DELETE":
+        try:
+            task = Task.objects.get(pk=pk)
+            if request.user == task.created_by:
+                task.delete()
+                return Response(status=status.HTTP_205_RESET_CONTENT)
+            else:
+                return Response("You do not have permission for manipulations on this task",
+                                status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(["POST"])
